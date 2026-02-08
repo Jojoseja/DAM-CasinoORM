@@ -4,6 +4,25 @@
              xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_2.xsd"
              version="3.2">
     <persistence-unit name="default">
+        <!-- Classes -->
+        <class>com.jotomo.casino.model.Cliente</class>
+        <class>com.jotomo.casino.model.Servicio</class>
+        <class>com.jotomo.casino.model.Log</class>
+        <class>com.jotomo.casino.model.TipoConcepto</class>
+        <class>com.jotomo.casino.model.TipoServicio</class>
 
+        <properties>
+            <!-- Propiedades Generales -->
+            <property name="jakarta.persistence.jdbc.driver" value="org.postgresql.Driver"/>
+            <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQLDialect"/>
+
+            <!-- Propiedades Especificas -->
+            <property name="jakarta.persistence.jdbc.url" value="jdbc:postgresql://localhost:5432/aprendizaje?currentSchema=casinoorm"/>
+            <property name="jakarta.persistence.jdbc.user" value="alumno"></property>
+            <property name="jakarta.persistence.jdbc.password" value="alumno"></property>
+
+            <!-- Modificar Luego -->
+
+        </properties>
     </persistence-unit>
 </persistence>
