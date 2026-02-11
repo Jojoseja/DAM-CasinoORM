@@ -20,7 +20,7 @@ public class Cliente {
     @Column(name = "apellido", nullable = false, length = 50)
     private String apellido;
 
-    @OneToMany(mappedBy = "dni")
+    @OneToMany(mappedBy = "cliente")
     private Set<Log> logs = new LinkedHashSet<>();
 
     public Cliente() {

@@ -1,19 +1,17 @@
 package com.jotomo.casino.dao;
 
 import com.jotomo.casino.exceptions.*;
-import com.jotomo.casino.model.Cliente;
-import com.jotomo.casino.model.Log;
-import com.jotomo.casino.model.Servicio;
-import com.jotomo.casino.model.TipoServicio;
+import com.jotomo.casino.model.*;
 import jakarta.persistence.*;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 public class CasinoManager implements CasinoDAO{
     EntityManagerFactory emf = Persistence.createEntityManagerFactory("casinoorm");
-
 
     @Override
     public void addCliente(Cliente cliente) throws ValidacionException, ClientAlreadyExistsException, IOException, AccesoDenegadoException {
@@ -197,10 +195,10 @@ public class CasinoManager implements CasinoDAO{
     }
 
     @Override
-    public double gananciasAlimentos(String dni) throws ValidacionException, IOException, AccesoDenegadoException, ClientNotFoundException {
+    public BigDecimal gananciasAlimentos(String dni) throws ValidacionException, IOException, AccesoDenegadoException, ClientNotFoundException {
         double totalGanado = 0;
 
-        String consulta = "SELECT cantidad_concepto FROM Log l WHERE l.dni like ?1";
+        String consulta = "SELECT cantidad_concepto FROM Log l WHERE l.cliente like ?1";
 
         EntityManager em = emf.createEntityManager();
         EntityTransaction tx = em.getTransaction();
@@ -213,31 +211,83 @@ public class CasinoManager implements CasinoDAO{
 
         tx.commit();
         em.close();
-        return 0;
+        return null;
     }
 
     @Override
-    public double dineroInvertidoClienteEnDia(String dni, LocalDate fecha) throws ValidacionException, LogNotFoundException, IOException, AccesoDenegadoException, ClientNotFoundException {
-        return 0;
+    public BigDecimal dineroInvertidoClienteEnDia(String dni, LocalDate fecha) throws ValidacionException, LogNotFoundException, IOException, AccesoDenegadoException, ClientNotFoundException {
+
+        EntityManager em = emf.createEntityManager();
+
+        TypedQuery<BigDecimal> queryUsuarioGastado = em.createQuery("SELECT SUM(l.cantidadConcepto) FROM Log l WHERE l.cliente.dni = (:c1) AND l.fecha = (:c2) AND l.concepto IN (:lista)", BigDecimal.class);
+
+        queryUsuarioGastado.setParameter("c1",dni);
+        queryUsuarioGastado.setParameter("c2",fecha);
+        queryUsuarioGastado.setParameter("lista",List.of(TipoConcepto.APOSTAR,TipoConcepto.COMPRABEBIDA,TipoConcepto.COMPRACOMIDA));
+
+        BigDecimal gastado = queryUsuarioGastado.getSingleResult();
+
+        TypedQuery<BigDecimal> queryUsuarioGanado = em.createQuery("SELECT SUM(l.cantidadConcepto) FROM Log l WHERE l.cliente.dni = (:c1) AND l.fecha = (:c2) AND l.concepto = 'APUESTACLIENTEGANA'", BigDecimal.class);
+        queryUsuarioGanado.setParameter("c1",dni);
+        queryUsuarioGanado.setParameter("c2",fecha);
+
+        BigDecimal ganado = queryUsuarioGanado.getSingleResult();
+
+        BigDecimal total = gastado.subtract(ganado);
+        return total;
     }
 
     @Override
     public int vecesClienteJuegaMesa(String dni, String codigo) throws ValidacionException, IOException, AccesoDenegadoException, ClientNotFoundException, ServiceNotFoundException {
-        return 0;
+        EntityManager em = emf.createEntityManager();
+        TypedQuery<Log> query = em.createQuery("SELECT l from Log l WHERE l.cliente.dni = (:c1) AND l.servicio.codigo = (:c2)", Log.class);
+
+        query.setParameter("c1",dni);
+        query.setParameter("c2",codigo);
+
+        List<Log> listaLogs = query.getResultList();
+        return listaLogs.size();
     }
 
     @Override
-    public double ganadoMesas() throws IOException, AccesoDenegadoException {
-        return 0;
+    public BigDecimal ganadoMesas() throws IOException, AccesoDenegadoException {
+        EntityManager em = emf.createEntityManager();
+
+        //Consulta para las ganancias en apuestas
+        TypedQuery<BigDecimal> queryApuestas = em.createQuery("SELECT SUM (l.cantidadConcepto) FROM Log l WHERE l.concepto in (:c1)",BigDecimal.class);
+        queryApuestas.setParameter("c1",TipoConcepto.APOSTAR);
+        BigDecimal ganancias = queryApuestas.getSingleResult();
+
+
+        //Consulta para las pérdidas en apuestas
+        TypedQuery<BigDecimal> queryPerdidas = em.createQuery("SELECT SUM (l.cantidadConcepto) FROM Log l WHERE l.concepto in (:c1)",BigDecimal.class);
+        queryPerdidas.setParameter("c1",TipoConcepto.APUESTACLIENTEGANA);
+        BigDecimal perdidas = queryPerdidas.getSingleResult();
+
+        BigDecimal total = ganancias.subtract(perdidas);
+
+        return total;
     }
 
+    //todo: convertir este y todos los métodos que devuelven double a BigDecimal
     @Override
-    public double ganadoEstablecimientos() throws IOException, AccesoDenegadoException {
-        return 0;
+    public BigDecimal ganadoEstablecimientos() throws IOException, AccesoDenegadoException {
+        EntityManager em = emf.createEntityManager();
+        TypedQuery<BigDecimal> query = em.createQuery("SELECT SUM (l.cantidadConcepto) FROM Log l WHERE l.concepto IN (:c1,:c2)", BigDecimal.class);
+
+        query.setParameter("c1", TipoConcepto.COMPRABEBIDA);
+        query.setParameter("c2", TipoConcepto.COMPRACOMIDA);
+
+        BigDecimal total = query.getSingleResult();
+        return total;
     }
 
     @Override
     public List<Servicio> devolverServiciosTipo(TipoServicio tipoServicio) throws ValidacionException, IOException, AccesoDenegadoException {
-        return List.of();
+        EntityManager em = emf.createEntityManager();
+        TypedQuery<Servicio> query = em.createQuery("SELECT s FROM Servicio s WHERE tipo = (:c1)",Servicio.class);
+        query.setParameter("c1",tipoServicio);
+        List<Servicio> listaServicios = query.getResultList();
+        return listaServicios;
     }
 }

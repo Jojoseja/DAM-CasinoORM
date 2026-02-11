@@ -16,13 +16,14 @@ public class Servicio {
     @Column(name = "nombre", nullable = false, length = 50)
     private String nombre;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "tipo", nullable = false, length = 50)
     private TipoServicio tipo;
 
     @Column(name = "capacidad", nullable = false)
     private Integer capacidad;
 
-    @OneToMany(mappedBy = "codigo")
+    @OneToMany(mappedBy = "servicio")
     private Set<Log> logs = new LinkedHashSet<>();
 
     public Servicio() {}

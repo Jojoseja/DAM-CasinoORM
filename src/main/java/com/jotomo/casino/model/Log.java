@@ -1,16 +1,13 @@
 package com.jotomo.casino.model;
 
 import jakarta.persistence.*;
-import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
-import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
 import java.util.Objects;
 
 @Entity
@@ -26,13 +23,13 @@ public class Log {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    @JoinColumn(name = "dni")
-    private Cliente dni;
+    @JoinColumn(name = "dni_cliente")
+    private Cliente cliente;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    @JoinColumn(name = "codigo")
-    private Servicio codigo;
+    @JoinColumn(name = "codigo_srevicio")
+    private Servicio servicio;
 
     @Column(name = "fecha", nullable = false)
     private LocalDate fecha;
@@ -40,23 +37,26 @@ public class Log {
     @Column(name = "hora", nullable = false)
     private LocalTime hora;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "concepto", nullable = false, length = 50)
     private TipoConcepto concepto;
 
     @Column(name = "cantidad_concepto", nullable = false, precision = 10, scale = 2)
-    private double cantidadConcepto;
-
+    private BigDecimal cantidadConcepto;
+    /*
     @Column(name = "lista_clientes", nullable = false)
     @JdbcTypeCode(SqlTypes.JSON)
     private Map<String, Object> listaClientes;
+
+     */
 
     public Log() {
     }
 
     //Constructor sin fecha y hora para crear log
     public Log(Cliente dni, Servicio codigo, TipoConcepto concepto, double cantidadConcepto) {
-        setDni(dni);
-        setCodigo(codigo);
+        setCliente(dni);
+        setServicio(codigo);
         setConcepto(concepto);
         setCantidadConcepto(cantidadConcepto);
         this.fecha = LocalDate.now();
@@ -65,8 +65,8 @@ public class Log {
 
     //TODO: Revisar este constructor por si no se usa
     public Log(Cliente dni, Servicio codigo, LocalDate fecha, LocalTime hora, TipoConcepto concepto, double cantidadConcepto) {
-        setDni(dni);
-        setCodigo(codigo);
+        setCliente(dni);
+        setServicio(codigo);
         setConcepto(concepto);
         setCantidadConcepto(cantidadConcepto);
         this.fecha = fecha;
@@ -81,26 +81,26 @@ public class Log {
         this.id = id;
     }
 
-    public Cliente getDni() {
-        return dni;
+    public Cliente getCliente() {
+        return cliente;
     }
 
-    public void setDni(Cliente cliente) {
+    public void setCliente(Cliente cliente) {
         if (cliente == null){
             throw new IllegalArgumentException("Cliente no puede ser null");
         }
-        this.dni = cliente;
+        this.cliente = cliente;
     }
 
-    public Servicio getCodigo() {
-        return codigo;
+    public Servicio getServicio() {
+        return servicio;
     }
 
-    public void setCodigo(Servicio servicio) {
+    public void setServicio(Servicio servicio) {
         if (servicio == null){
             throw new IllegalArgumentException("Servicio no puede ser null");
         }
-        this.codigo = servicio;
+        this.servicio = servicio;
     }
 
     public LocalDate getFecha() {
@@ -159,17 +159,17 @@ public class Log {
         this.concepto = concepto;
     }
 
-    public double getCantidadConcepto() {
+    public BigDecimal getCantidadConcepto() {
         return cantidadConcepto;
     }
 
     public void setCantidadConcepto(double cantidadConcepto) {
-        if (cantidadConcepto <= 0){
+        if (cantidadConcepto<= 0){
             throw new IllegalArgumentException("La cantidad debe ser mayor a 0");
         }
-        this.cantidadConcepto = cantidadConcepto;
+        this.cantidadConcepto = BigDecimal.valueOf(cantidadConcepto);
     }
-
+    /*
     public Map<String, Object> getListaClientes() {
         return listaClientes;
     }
@@ -177,12 +177,13 @@ public class Log {
     public void setListaClientes(Map<String, Object> listaClientes) {
         this.listaClientes = listaClientes;
     }
+     */
 
     @Override
     public String toString() {
         return "Log{" +
-                "cliente=" + dni +
-                ", servicio=" + codigo +
+                "cliente=" + cliente +
+                ", servicio=" + servicio +
                 ", fecha=" + fecha +
                 ", hora=" + hora +
                 ", concepto=" + concepto +
@@ -197,9 +198,9 @@ public class Log {
 
         Log log = (Log) obj;
 
-        return Double.compare(log.cantidadConcepto, cantidadConcepto) == 0 &&
-                Objects.equals(dni, log.dni) &&
-                Objects.equals(codigo, log.codigo) &&
+        return cantidadConcepto.compareTo(log.cantidadConcepto) == 0 &&
+                Objects.equals(cliente, log.cliente) &&
+                Objects.equals(servicio, log.servicio) &&
                 Objects.equals(fecha, log.fecha) &&
                 Objects.equals(hora, log.hora) &&
                 concepto == log.concepto;
@@ -207,7 +208,7 @@ public class Log {
 
     @Override
     public int hashCode() {
-        return Objects.hash(dni, codigo, fecha, hora, concepto, cantidadConcepto);
+        // stripTrailingZeros() garantiza que 10.0 y 10.00 generen el mismo hash
+        return Objects.hash(cliente, servicio, fecha, hora, concepto, cantidadConcepto.stripTrailingZeros());
     }
-
 }

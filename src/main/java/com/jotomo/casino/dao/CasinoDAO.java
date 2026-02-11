@@ -7,6 +7,7 @@ import com.jotomo.casino.model.Servicio;
 import com.jotomo.casino.model.TipoServicio;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -155,7 +156,7 @@ public interface CasinoDAO {
      * @throws AccesoDenegadoException Si se ha denegado el acceso a la base de datos
      * @throws ClientNotFoundException Si no se ha encontrado el cliente que se consulta
      */
-    public double gananciasAlimentos(String dni) throws ValidacionException, IOException, AccesoDenegadoException, ClientNotFoundException;
+    public BigDecimal gananciasAlimentos(String dni) throws ValidacionException, IOException, AccesoDenegadoException, ClientNotFoundException;
 
     /**
      * Devuelve el valor del dinero invertido por un cliente en el casino
@@ -168,7 +169,7 @@ public interface CasinoDAO {
      * @throws AccesoDenegadoException Si se ha denegado el acceso a la base de datos
      * @throws ClientNotFoundException Si no se ha encontrado el cliente que se consulta
      */
-    public double dineroInvertidoClienteEnDia(String dni, LocalDate fecha) throws ValidacionException, LogNotFoundException, IOException, AccesoDenegadoException, ClientNotFoundException;
+    public BigDecimal dineroInvertidoClienteEnDia(String dni, LocalDate fecha) throws ValidacionException, LogNotFoundException, IOException, AccesoDenegadoException, ClientNotFoundException;
 
     /**
      * Devuelve la cantidad de veces que un cliente ha jugado en una mesa
@@ -189,7 +190,7 @@ public interface CasinoDAO {
      * @throws IOException Si ha habido algún error de E/S en el fichero
      * @throws AccesoDenegadoException Si se ha denegado el acceso a la base de datos
      */
-    public double ganadoMesas() throws IOException, AccesoDenegadoException;
+    public BigDecimal ganadoMesas() throws IOException, AccesoDenegadoException;
 
     /**
      * Devuelve el total de lo ganado en establecimientos
@@ -197,7 +198,7 @@ public interface CasinoDAO {
      * @throws IOException Si ha habido algún error de E/S en el fichero
      * @throws AccesoDenegadoException Si se ha denegado el acceso a la base de datos
      */
-    public double ganadoEstablecimientos() throws IOException, AccesoDenegadoException;
+    public BigDecimal ganadoEstablecimientos() throws IOException, AccesoDenegadoException;
 
     /**
      * Devuelve una lista con las mesas que sean de tipoJuego
