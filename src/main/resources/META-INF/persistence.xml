@@ -3,7 +3,7 @@
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
              xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_2.xsd"
              version="3.2">
-    <persistence-unit name="default">
+    <persistence-unit name="casinoorm">
         <!-- Classes -->
         <class>com.jotomo.casino.model.Cliente</class>
         <class>com.jotomo.casino.model.Servicio</class>
@@ -18,11 +18,11 @@
 
             <!-- Propiedades Especificas -->
             <property name="jakarta.persistence.jdbc.url" value="jdbc:postgresql://localhost:5432/aprendizaje?currentSchema=casinoorm"/>
-            <property name="jakarta.persistence.jdbc.user" value="alumno"></property>
-            <property name="jakarta.persistence.jdbc.password" value="alumno"></property>
+            <property name="jakarta.persistence.jdbc.user" value="alumno"/>
+            <property name="jakarta.persistence.jdbc.password" value="alumno"/>
 
             <!-- Modificar Luego -->
-
+            <property name="jakarta.persistence.schema-generation.database.action" value="drop-and-create"/>
         </properties>
     </persistence-unit>
 </persistence>

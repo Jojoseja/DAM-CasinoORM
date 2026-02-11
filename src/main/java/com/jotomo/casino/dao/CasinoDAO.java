@@ -1,8 +1,8 @@
 package com.jotomo.casino.dao;
 
 import com.jotomo.casino.exceptions.*;
-import com.jotomo.casino.model.Cliente;
 import com.jotomo.casino.model.Log;
+import com.jotomo.casino.model.Cliente;
 import com.jotomo.casino.model.Servicio;
 import com.jotomo.casino.model.TipoServicio;
 

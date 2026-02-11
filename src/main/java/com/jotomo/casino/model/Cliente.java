@@ -1,25 +1,28 @@
 package com.jotomo.casino.model;
 
 import com.jotomo.casino.exceptions.ValidacionException;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.persistence.*;
 
+import java.util.LinkedHashSet;
 import java.util.Objects;
+import java.util.Set;
 
 @Entity
+@Table(name = "clientes")
 public class Cliente {
     @Id
+    @Column(name = "dni", nullable = false, length = 9)
     private String dni;
 
-    @Column(columnDefinition = "varchar(255) not null", nullable = false)
+    @Column(name = "nombre", nullable = false, length = 50)
     private String nombre;
 
-    @Column(columnDefinition = "varchar(255) not null", nullable = false)
-    private String apellidos;
+    @Column(name = "apellido", nullable = false, length = 50)
+    private String apellido;
 
-    //Constructor vacío obligatorio para JAXB
+    @OneToMany(mappedBy = "dni")
+    private Set<Log> logs = new LinkedHashSet<>();
+
     public Cliente() {
     }
 
@@ -28,7 +31,7 @@ public class Cliente {
         setNombre(nombre);
         setApellidos(apellidos);
     }
-    @XmlElement
+
     public String getDni() {
         return dni;
     }
@@ -46,7 +49,6 @@ public class Cliente {
         this.dni = dni;
     }
 
-    @XmlElement
     public String getNombre() {
         return nombre;
     }
@@ -58,17 +60,25 @@ public class Cliente {
         this.nombre = nombre.trim();
     }
 
-    @XmlElement
     public String getApellidos() {
-        return apellidos;
+        return apellido;
     }
 
     public void setApellidos(String apellidos) throws ValidacionException {
         if (apellidos == null || apellidos.isBlank()) {
             throw new ValidacionException("ERROR: Apellidos no puede estar vacío o ser nulo");
         }
-        this.apellidos = apellidos.trim();
+        this.apellido = apellidos.trim();
     }
+
+    public Set<Log> getLogs() {
+        return logs;
+    }
+
+    public void setLogs(Set<Log> logs) {
+        this.logs = logs;
+    }
+
 
     public static boolean validarDni(String dni){
         String[] letras = {"T", "R", "W", "A", "G", "M", "Y", "F", "P", "D", "X","B",
@@ -101,13 +111,13 @@ public class Cliente {
         return Objects.hash(dni);
     }
 
-
     @Override
     public String toString() {
         return "Cliente{" +
                 "dni='" + dni + '\'' +
                 ", nombre='" + nombre + '\'' +
-                ", apellidos='" + apellidos + '\'' +
+                ", apellidos='" + apellido + '\'' +
                 '}';
     }
+
 }
