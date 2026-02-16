@@ -7,3 +7,12 @@ ya que con double me daba problemas a la hora de escribirlo (por la escala 10,2)
   - devolverServiciosTipo()
   - ganadoMesas()
   - vecesClienteJuegaMesa()
+
+# Cambios hecho por Jose (16/02/2026)
+- He cambiado el valor return de una funcion de float a BigDecimal
+- He creado un "pruebas" para hacer _pruebas_ y no tocar el main
+- Metodos hechos:
+  - leerListaServicios()
+  - leerListaClientes()
+  - gananciasAlimentos()
+  - consultaLog()

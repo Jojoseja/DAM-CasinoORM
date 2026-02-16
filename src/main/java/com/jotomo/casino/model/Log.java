@@ -28,7 +28,7 @@ public class Log {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    @JoinColumn(name = "codigo_srevicio")
+    @JoinColumn(name = "codigo_servicio")
     private Servicio servicio;
 
     @Column(name = "fecha", nullable = false)

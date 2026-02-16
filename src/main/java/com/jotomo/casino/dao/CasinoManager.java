@@ -76,7 +76,19 @@ public class CasinoManager implements CasinoDAO{
 
     @Override
     public List<Servicio> leerListaServicios() throws IOException, AccesoDenegadoException {
-        return List.of();
+        List<Servicio> listaServicio;
+
+        EntityManager em = emf.createEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        tx.begin();
+
+        Query consulta = em.createQuery("SELECT s from Servicio s");
+        listaServicio = consulta.getResultList();
+
+        tx.commit();
+        em.close();
+
+        return listaServicio;
     }
 
     @Override
@@ -99,12 +111,45 @@ public class CasinoManager implements CasinoDAO{
 
     @Override
     public List<Cliente> leerListaClientes() throws IOException, AccesoDenegadoException {
-        return List.of();
+        List<Cliente> listaCliente;
+
+        EntityManager em = emf.createEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        tx.begin();
+
+        Query consulta = em.createQuery("SELECT c from Cliente c");
+        listaCliente = consulta.getResultList();
+
+        tx.commit();
+        em.close();
+
+        return listaCliente;
     }
 
     @Override
     public List<Log> consultaLog(String codigoServicio, String dni, LocalDate fecha) throws ValidacionException, LogNotFoundException, IOException, AccesoDenegadoException, ClientNotFoundException, ServiceNotFoundException {
-        return List.of();
+        List<Log> listaLog;
+
+        EntityManager em = emf.createEntityManager();
+        EntityTransaction tx = em.getTransaction();
+        tx.begin();
+
+        // Uso de JOIN FETCH para cargar los datos de cliente y servicio
+        Query consulta = em.createQuery("SELECT l from Log l " +
+                "JOIN FETCH l.cliente c " +
+                "JOIN FETCH l.servicio s " +
+                "WHERE c.dni LIKE ?1 AND l.fecha = ?2 AND s.codigo LIKE ?3");
+        consulta.setParameter(1, dni);
+        consulta.setParameter(2, fecha);
+        consulta.setParameter(3, codigoServicio);
+        listaLog = consulta.getResultList();
+
+        tx.commit();
+        em.close();
+
+        if (listaLog.isEmpty()) throw new LogNotFoundException("No se ha encontrado el Log");
+
+        return listaLog;
     }
 
     @Override
@@ -198,20 +243,26 @@ public class CasinoManager implements CasinoDAO{
     public BigDecimal gananciasAlimentos(String dni) throws ValidacionException, IOException, AccesoDenegadoException, ClientNotFoundException {
         double totalGanado = 0;
 
-        String consulta = "SELECT cantidad_concepto FROM Log l WHERE l.cliente like ?1";
+        List<TipoConcepto> listaConcepto = List.of(TipoConcepto.COMPRABEBIDA, TipoConcepto.COMPRACOMIDA);
+
+        String consulta = "SELECT SUM(l.cantidadConcepto) from Log l " +
+                "WHERE l.concepto IN :listaConcepto AND l.cliente.dni LIKE :dni ";
+
+
+
 
         EntityManager em = emf.createEntityManager();
-        EntityTransaction tx = em.getTransaction();
 
         Query query = em.createQuery(consulta);
 
-        query.setParameter(1, dni);
+        query.setParameter("listaConcepto", listaConcepto);
+        query.setParameter("dni", dni);
 
 
+        BigDecimal total = (BigDecimal) query.getSingleResult();
 
-        tx.commit();
         em.close();
-        return null;
+        return total;
     }
 
     @Override
