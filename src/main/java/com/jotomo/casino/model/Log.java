@@ -43,12 +43,6 @@ public class Log {
 
     @Column(name = "cantidad_concepto", nullable = false, precision = 10, scale = 2)
     private BigDecimal cantidadConcepto;
-    /*
-    @Column(name = "lista_clientes", nullable = false)
-    @JdbcTypeCode(SqlTypes.JSON)
-    private Map<String, Object> listaClientes;
-
-     */
 
     public Log() {
     }
@@ -169,21 +163,12 @@ public class Log {
         }
         this.cantidadConcepto = BigDecimal.valueOf(cantidadConcepto);
     }
-    /*
-    public Map<String, Object> getListaClientes() {
-        return listaClientes;
-    }
-
-    public void setListaClientes(Map<String, Object> listaClientes) {
-        this.listaClientes = listaClientes;
-    }
-     */
 
     @Override
     public String toString() {
         return "Log{" +
-                "cliente=" + cliente +
-                ", servicio=" + servicio +
+                "cliente=" + cliente.getDni() +
+                ", servicio=" + servicio.getCodigo() +
                 ", fecha=" + fecha +
                 ", hora=" + hora +
                 ", concepto=" + concepto +

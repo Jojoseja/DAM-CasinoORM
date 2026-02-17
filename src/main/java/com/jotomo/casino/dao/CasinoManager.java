@@ -3,6 +3,10 @@ package com.jotomo.casino.dao;
 import com.jotomo.casino.exceptions.*;
 import com.jotomo.casino.model.*;
 import jakarta.persistence.*;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -135,15 +139,34 @@ public class CasinoManager implements CasinoDAO{
         tx.begin();
 
         // Uso de JOIN FETCH para cargar los datos de cliente y servicio
+
         Query consulta = em.createQuery("SELECT l from Log l " +
                 "JOIN FETCH l.cliente c " +
                 "JOIN FETCH l.servicio s " +
                 "WHERE c.dni LIKE ?1 AND l.fecha = ?2 AND s.codigo LIKE ?3");
+
+
+        /*
+        Query consulta = em.createQuery(
+                "SELECT l FROM Log l " +
+                "JOIN FETCH l.cliente c " +
+                "JOIN FETCH l.servicio s " +
+                "WHERE c.dni = :dni " +
+                "AND l.fecha = :fecha " +
+                "AND s.codigo = :codigo"
+        );
+
+
+
+        consulta.setParameter("dni", dni);
+        consulta.setParameter("fecha", fecha);
+        consulta.setParameter("codigo", codigoServicio);
+        */
+
         consulta.setParameter(1, dni);
         consulta.setParameter(2, fecha);
         consulta.setParameter(3, codigoServicio);
         listaLog = consulta.getResultList();
-
         tx.commit();
         em.close();
 
@@ -232,7 +255,6 @@ public class CasinoManager implements CasinoDAO{
 
         em.remove(clienteAux);
 
-
         tx.commit();
         em.close();
 
@@ -241,15 +263,11 @@ public class CasinoManager implements CasinoDAO{
 
     @Override
     public BigDecimal gananciasAlimentos(String dni) throws ValidacionException, IOException, AccesoDenegadoException, ClientNotFoundException {
-        double totalGanado = 0;
 
         List<TipoConcepto> listaConcepto = List.of(TipoConcepto.COMPRABEBIDA, TipoConcepto.COMPRACOMIDA);
 
         String consulta = "SELECT SUM(l.cantidadConcepto) from Log l " +
                 "WHERE l.concepto IN :listaConcepto AND l.cliente.dni LIKE :dni ";
-
-
-
 
         EntityManager em = emf.createEntityManager();
 
@@ -320,7 +338,6 @@ public class CasinoManager implements CasinoDAO{
         return total;
     }
 
-    //todo: convertir este y todos los métodos que devuelven double a BigDecimal
     @Override
     public BigDecimal ganadoEstablecimientos() throws IOException, AccesoDenegadoException {
         EntityManager em = emf.createEntityManager();
@@ -340,5 +357,44 @@ public class CasinoManager implements CasinoDAO{
         query.setParameter("c1",tipoServicio);
         List<Servicio> listaServicios = query.getResultList();
         return listaServicios;
+    }
+
+    // Metodo NO DAO
+
+    /**
+     * Devuelve lo ganado por un cliente en un dia en concreto
+     * @param dni Dni del cliente
+     * @param fecha fecha del dia a buscar
+     * @return Lo ganado apostado menos lo perdido apostando
+     * @throws IOException
+     * @throws ClientNotFoundException Lanza la excepción si no se encuentra el cliente
+     */
+    public BigDecimal dineroGanadoClienteEnDia(String dni, LocalDate fecha) throws IOException, ClientNotFoundException {
+        EntityManager em = emf.createEntityManager();
+
+        CriteriaBuilder cb = em.getCriteriaBuilder();
+        CriteriaQuery<Log> cq = cb.createQuery(Log.class);
+        Root<Log> log = cq.from(Log.class);
+
+        Predicate cliente = cb.equal(log.get("cliente").get("dni"), dni);
+        Predicate pFecha = cb.equal(log.get("fecha"), fecha);
+
+        cq.select(log).where(cb.and(cliente,pFecha));
+
+        List<Log> logs = em.createQuery(cq).getResultList();
+
+        em.close();
+
+        BigDecimal total = BigDecimal.valueOf(0);
+        for (Log lo : logs) {
+            if (lo.getConcepto().equals(TipoConcepto.APUESTACLIENTEGANA)) {
+                total = total.add(lo.getCantidadConcepto());
+            } else if (lo.getConcepto().equals(TipoConcepto.APOSTAR)){
+                total = total.subtract(lo.getCantidadConcepto());
+            }
+
+        }
+
+        return total;
     }
 }
