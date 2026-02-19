@@ -126,9 +126,8 @@ public interface CasinoDAO {
      * @throws ValidacionException Si el objeto cliente es nulo o están mal alguno de sus parámetros
      * @throws ClientNotFoundException Si no se ha podido encontrar el cliente a borrar
      * @throws AccesoDenegadoException Si se ha denegado el acceso a la base de datos
-     * @throws ServiceNotFoundException Si no se ha encontrado el servicio que se consulta
      */
-    public boolean borrarCliente(Cliente cliente) throws ValidacionException, ClientNotFoundException, AccesoDenegadoException, ServiceNotFoundException;
+    public boolean borrarCliente(Cliente cliente) throws ValidacionException, ClientNotFoundException, AccesoDenegadoException;
 
 
 

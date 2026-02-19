@@ -16,15 +16,11 @@ public class CasinoManager implements CasinoDAO{
 
     @Override
     public void addCliente(Cliente cliente) throws ValidacionException, ClientAlreadyExistsException, AccesoDenegadoException {
+        if (cliente == null) throw new ValidacionException("El cliente no puede ser null");
         try {
-
             EntityManager em = emf.createEntityManager();
             EntityTransaction tx = em.getTransaction();
             tx.begin();
-
-            if (cliente == null){
-                throw new ValidacionException("El cliente no puede ser null");
-            }
 
             try {
                 em.persist(cliente);
@@ -32,7 +28,6 @@ public class CasinoManager implements CasinoDAO{
                 tx.rollback();
                 throw new ClientAlreadyExistsException("El cliente ya existe en la base de datos", e);
             }
-
             em.flush();
             em.refresh(cliente);
 
@@ -46,15 +41,10 @@ public class CasinoManager implements CasinoDAO{
 
     @Override
     public void addServicio(Servicio servicio) throws ValidacionException, ServiceAlreadyExistsException, AccesoDenegadoException {
-
+        if (servicio == null) throw new ValidacionException("El cliente no puede ser null");
         try {
             EntityManager em = emf.createEntityManager();
             EntityTransaction tx = em.getTransaction();
-
-            if (servicio == null){
-                throw new ValidacionException("El cliente no puede ser null");
-            }
-
             tx.begin();
 
             try {
@@ -70,16 +60,13 @@ public class CasinoManager implements CasinoDAO{
             tx.commit();
             em.close();
         } catch (Exception e) {
-        throw new AccesoDenegadoException("No se ha podido acceder a la base de datos", e);
+            throw new AccesoDenegadoException("No se ha podido acceder a la base de datos", e);
         }
     }
 
     @Override
     public void addLog(Log log) throws ValidacionException, AccesoDenegadoException {
-
-        if (log == null){
-            throw new ValidacionException("El log no puede ser null");
-        }
+        if (log == null) throw new ValidacionException("El log no puede ser null");
 
         EntityManager em = null;
         EntityTransaction tx = null;
@@ -111,11 +98,7 @@ public class CasinoManager implements CasinoDAO{
 
     @Override
     public String consultaServicio(String codigo) throws ValidacionException, ServiceNotFoundException, AccesoDenegadoException {
-
-        if (codigo == null || codigo.trim().isEmpty()) {
-            throw new ValidacionException("El código no puede ser nulo");
-        }
-
+        if (codigo == null || codigo.trim().isEmpty()) throw new ValidacionException("El código no puede ser nulo o estar vacio");
 
         EntityManager em = null;
 
@@ -163,11 +146,7 @@ public class CasinoManager implements CasinoDAO{
     @Override
     public String consultaCliente(String dni) throws ValidacionException, ClientNotFoundException, AccesoDenegadoException {
         Cliente cliente;
-
-        if (dni == null || dni.isBlank()){
-            throw new ValidacionException("El dni no puede ser nulo");
-        }
-
+        if (dni == null || dni.isBlank()) throw new ValidacionException("El dni no puede ser nulo");
         try {
             EntityManager em = emf.createEntityManager();
             EntityTransaction tx = em.getTransaction();
@@ -209,51 +188,49 @@ public class CasinoManager implements CasinoDAO{
 
     @Override
     public List<Log> consultaLog(String codigoServicio, String dni, LocalDate fecha) throws ValidacionException, LogNotFoundException, AccesoDenegadoException, ClientNotFoundException, ServiceNotFoundException {
+        if (codigoServicio == null || codigoServicio.trim().isEmpty()) throw new ValidacionException("codigoServicio no puede ser nulo o estar vacio");
+        if (dni == null || dni.trim().isEmpty()) throw new ValidacionException("dni no puede ser nulo o estar vacio");
+
+
         List<Log> listaLog;
 
-        EntityManager em = emf.createEntityManager();
-        EntityTransaction tx = em.getTransaction();
-        tx.begin();
+        try {
+            EntityManager em = emf.createEntityManager();
+            EntityTransaction tx = em.getTransaction();
+            tx.begin();
 
-        // Uso de JOIN FETCH para cargar los datos de cliente y servicio
+            // Uso de JOIN FETCH para cargar los datos de cliente y servicio
 
-        Query consulta = em.createQuery("SELECT l from Log l " +
-                "JOIN FETCH l.cliente c " +
-                "JOIN FETCH l.servicio s " +
-                "WHERE c.dni LIKE ?1 AND l.fecha = ?2 AND s.codigo LIKE ?3");
-
-
-        /*
-        Query consulta = em.createQuery(
-                "SELECT l FROM Log l " +
-                "JOIN FETCH l.cliente c " +
-                "JOIN FETCH l.servicio s " +
-                "WHERE c.dni = :dni " +
-                "AND l.fecha = :fecha " +
-                "AND s.codigo = :codigo"
-        );
+            if (em.find(Servicio.class, codigoServicio) == null) throw new ServiceNotFoundException("No se ha encontrado el servicio en la base de datos");
+            if (em.find(Cliente.class, dni) == null) throw new ClientNotFoundException("No se ha encontrado el cliente en la base de datos");
 
 
+            Query consulta = em.createQuery("SELECT l from Log l " +
+                    "JOIN FETCH l.cliente c " +
+                    "JOIN FETCH l.servicio s " +
+                    "WHERE c.dni LIKE ?1 AND l.fecha = ?2 AND s.codigo LIKE ?3");
 
-        consulta.setParameter("dni", dni);
-        consulta.setParameter("fecha", fecha);
-        consulta.setParameter("codigo", codigoServicio);
-        */
 
-        consulta.setParameter(1, dni);
-        consulta.setParameter(2, fecha);
-        consulta.setParameter(3, codigoServicio);
-        listaLog = consulta.getResultList();
-        tx.commit();
-        em.close();
+            consulta.setParameter(1, dni);
+            consulta.setParameter(2, fecha);
+            consulta.setParameter(3, codigoServicio);
+            listaLog = consulta.getResultList();
+            tx.commit();
+            em.close();
 
-        if (listaLog.isEmpty()) throw new LogNotFoundException("No se ha encontrado el Log");
+            if (listaLog.isEmpty()) throw new LogNotFoundException("No se ha encontrado el Log");
 
+        } catch (Exception e){
+            throw new AccesoDenegadoException("No se ha podido acceder a la base de datos", e);
+        }
         return listaLog;
     }
 
     @Override
     public boolean actualizarServicio(String codigo, Servicio servicioActualizado) throws ValidacionException, ServiceNotFoundException, AccesoDenegadoException {
+        if (codigo == null || codigo.trim().isEmpty()) throw new ValidacionException("codigo no puede ser nulo o estar vacio");
+        if (servicioActualizado == null) throw new ValidacionException("servicioActualizado no puede ser nulo o estar vacio");
+
         Servicio servicio;
 
         EntityManager em = emf.createEntityManager();
@@ -277,6 +254,7 @@ public class CasinoManager implements CasinoDAO{
 
     @Override
     public boolean actualizarCliente(String dni, Cliente clienteActualizado) throws ValidacionException, ClientNotFoundException, AccesoDenegadoException {
+        if (dni == null || dni.trim().isEmpty()) throw new ValidacionException("dni no puede ser nulo o estar vacio");
         Cliente cliente;
 
         EntityManager em = emf.createEntityManager();
@@ -319,7 +297,8 @@ public class CasinoManager implements CasinoDAO{
     }
 
     @Override
-    public boolean borrarCliente(Cliente cliente) throws ValidacionException, ClientNotFoundException, AccesoDenegadoException, ServiceNotFoundException {
+    public boolean borrarCliente(Cliente cliente) throws ValidacionException, ClientNotFoundException, AccesoDenegadoException{
+        if (cliente == null) throw new ValidacionException("Cliente no puede ser nulo o estar vacio");
         Cliente clienteAux;
 
         EntityManager em = emf.createEntityManager();
@@ -329,6 +308,7 @@ public class CasinoManager implements CasinoDAO{
         clienteAux = em.find(Cliente.class, cliente.getDni());
 
         if (clienteAux == null) throw new ClientNotFoundException("Cliente no encontrado");
+
 
         em.remove(clienteAux);
 
@@ -340,6 +320,7 @@ public class CasinoManager implements CasinoDAO{
 
     @Override
     public BigDecimal gananciasAlimentos(String dni) throws ValidacionException, AccesoDenegadoException, ClientNotFoundException {
+        if (dni == null || dni.trim().isEmpty()) throw new ValidacionException("dni no puede ser nulo o estar vacio");
 
         List<TipoConcepto> listaConcepto = List.of(TipoConcepto.COMPRABEBIDA, TipoConcepto.COMPRACOMIDA);
 
@@ -347,7 +328,7 @@ public class CasinoManager implements CasinoDAO{
                 "WHERE l.concepto IN :listaConcepto AND l.cliente.dni LIKE :dni ";
 
         EntityManager em = emf.createEntityManager();
-
+        if (em.find(Cliente.class, dni) == null) throw new ClientNotFoundException("No se ha encontrado el cliente en la base de datos");
         Query query = em.createQuery(consulta);
 
         query.setParameter("listaConcepto", listaConcepto);
@@ -365,7 +346,7 @@ public class CasinoManager implements CasinoDAO{
 
         try {
             EntityManager em = emf.createEntityManager();
-
+            if (em.find(Cliente.class, dni) == null) throw new ClientNotFoundException("No se ha encontrado el cliente en la base de datos");
             TypedQuery<BigDecimal> queryUsuarioGastado = em.createQuery("SELECT SUM(l.cantidadConcepto) FROM Log l WHERE l.cliente.dni = (:c1) AND l.fecha = (:c2) AND l.concepto IN (:lista)", BigDecimal.class);
 
             queryUsuarioGastado.setParameter("c1",dni);
@@ -390,6 +371,7 @@ public class CasinoManager implements CasinoDAO{
     @Override
     public int vecesClienteJuegaMesa(String dni, String codigo) throws ValidacionException, AccesoDenegadoException, ClientNotFoundException, ServiceNotFoundException {
         EntityManager em = emf.createEntityManager();
+        if (em.find(Cliente.class, dni) == null) throw new ClientNotFoundException("No se ha encontrado el cliente en la base de datos");
         TypedQuery<Log> query = em.createQuery("SELECT l from Log l WHERE l.cliente.dni = (:c1) AND l.servicio.codigo = (:c2)", Log.class);
 
         query.setParameter("c1",dni);
@@ -446,9 +428,9 @@ public class CasinoManager implements CasinoDAO{
     @Override
     public List<Servicio> devolverServiciosTipo(TipoServicio tipoServicio) throws ValidacionException, AccesoDenegadoException {
 
-        if (tipoServicio == null){
-            throw new ValidacionException("EL tipo de servicio es invalido");
-        }
+        if (tipoServicio == null) throw new ValidacionException("EL tipo de servicio es invalido");
+
+
 
         EntityManager em = emf.createEntityManager();
         TypedQuery<Servicio> query = em.createQuery("SELECT s FROM Servicio s WHERE tipo = (:c1)",Servicio.class);
@@ -475,7 +457,7 @@ public class CasinoManager implements CasinoDAO{
 
         Predicate cliente = cb.equal(log.get("cliente").get("dni"), dni);
 
-        if (cliente == null) throw new ClientNotFoundException("CLiente no encontrado.");
+        if (cliente == null) throw new ClientNotFoundException("Cliente no encontrado.");
 
         Predicate pFecha = cb.equal(log.get("fecha"), fecha);
 

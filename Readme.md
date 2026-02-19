@@ -16,3 +16,6 @@ ya que con double me daba problemas a la hora de escribirlo (por la escala 10,2)
   - leerListaClientes()
   - gananciasAlimentos()
   - consultaLog()
+
+# Ultimos Cambios
+- Modificadas los metodos para utilizar apropiadamente las excepciones
