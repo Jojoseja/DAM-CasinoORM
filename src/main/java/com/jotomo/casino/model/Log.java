@@ -57,7 +57,6 @@ public class Log {
         this.hora = LocalTime.now();
     }
 
-    //TODO: Revisar este constructor por si no se usa
     public Log(Cliente dni, Servicio codigo, LocalDate fecha, LocalTime hora, TipoConcepto concepto, double cantidadConcepto) {
         setCliente(dni);
         setServicio(codigo);

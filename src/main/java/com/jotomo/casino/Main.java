@@ -33,7 +33,7 @@ public class Main {
         Log log4 = new Log(cliente1, bar, LocalDate.now(), LocalTime.now(),
                 TipoConcepto.COMPRACOMIDA, 5.5);
 
-        LocalDate dateFecha = LocalDate.parse("2026-02-17");
+        LocalDate dateFecha = LocalDate.parse("2026-02-19");
 
         try {
             // CRUD
@@ -128,12 +128,10 @@ public class Main {
 
             //CANTIDAD GANADA CLIENTE DIA
             BigDecimal total = cm.dineroGanadoClienteEnDia("12345678Z", LocalDate.now());
-            System.out.println(total);
+            System.out.println("El cliente ha gastado:" + total);
 
 
-        } catch (IOException e) {
-            System.err.println("ERROR: " + e.getMessage());
-        } catch (AccesoDenegadoException e) {
+        }  catch (AccesoDenegadoException e) {
             System.err.println("ERROR: " + e.getMessage());
         } catch (ClientAlreadyExistsException e) {
             System.err.println("ERROR: " + e.getMessage());

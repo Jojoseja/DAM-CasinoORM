@@ -36,7 +36,6 @@ public class Servicio {
         this.capacidad = tipo.getCapacidadMaxima();
     }
 
-    //TODO: Revisar este constructor, no entiendo por qué capacidad no hereda del tipo
     public Servicio(String codigo, TipoServicio tipo, String nombreServicio, List<Cliente> listaClientes, int capacidadMaxima) {
         setCodigo(codigo);
         setTipo(tipo);

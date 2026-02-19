@@ -7,131 +7,208 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
-
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 
 public class CasinoManager implements CasinoDAO{
     EntityManagerFactory emf = Persistence.createEntityManagerFactory("casinoorm");
 
     @Override
-    public void addCliente(Cliente cliente) throws ValidacionException, ClientAlreadyExistsException, IOException, AccesoDenegadoException {
+    public void addCliente(Cliente cliente) throws ValidacionException, ClientAlreadyExistsException, AccesoDenegadoException {
+        try {
 
-        EntityManager em = emf.createEntityManager();
-        EntityTransaction tx = em.getTransaction();
-        tx.begin();
+            EntityManager em = emf.createEntityManager();
+            EntityTransaction tx = em.getTransaction();
+            tx.begin();
 
-        em.persist(cliente);
-        em.flush();
-        em.refresh(cliente);
+            if (cliente == null){
+                throw new ValidacionException("El cliente no puede ser null");
+            }
 
-        tx.commit();
-        em.close();
+            try {
+                em.persist(cliente);
+            } catch (PersistenceException e){
+                tx.rollback();
+                throw new ClientAlreadyExistsException("El cliente ya existe en la base de datos", e);
+            }
+
+            em.flush();
+            em.refresh(cliente);
+
+            tx.commit();
+            em.close();
+
+        } catch (Exception e) {
+            throw new AccesoDenegadoException("No se ha podido acceder a la base de datos", e);
+        }
     }
 
     @Override
-    public void addServicio(Servicio servicio) throws ValidacionException, ServiceAlreadyExistsException, IOException, AccesoDenegadoException {
-        EntityManager em = emf.createEntityManager();
-        EntityTransaction tx = em.getTransaction();
-        tx.begin();
+    public void addServicio(Servicio servicio) throws ValidacionException, ServiceAlreadyExistsException, AccesoDenegadoException {
 
-        em.persist(servicio);
-        em.flush();
-        em.refresh(servicio);
+        try {
+            EntityManager em = emf.createEntityManager();
+            EntityTransaction tx = em.getTransaction();
 
-        tx.commit();
-        em.close();
+            if (servicio == null){
+                throw new ValidacionException("El cliente no puede ser null");
+            }
+
+            tx.begin();
+
+            try {
+                em.persist(servicio);
+            } catch (PersistenceException e) {
+                tx.rollback();
+                throw new ServiceAlreadyExistsException("El servicio ya existe");
+            }
+
+            em.flush();
+            em.refresh(servicio);
+
+            tx.commit();
+            em.close();
+        } catch (Exception e) {
+        throw new AccesoDenegadoException("No se ha podido acceder a la base de datos", e);
+        }
     }
 
     @Override
-    public void addLog(Log log) throws ValidacionException, IOException, AccesoDenegadoException {
-        EntityManager em = emf.createEntityManager();
-        EntityTransaction tx = em.getTransaction();
-        tx.begin();
+    public void addLog(Log log) throws ValidacionException, AccesoDenegadoException {
 
-        em.persist(log);
-        em.flush();
-        em.refresh(log);
+        if (log == null){
+            throw new ValidacionException("El log no puede ser null");
+        }
 
-        tx.commit();
-        em.close();
+        EntityManager em = null;
+        EntityTransaction tx = null;
+
+        try {
+            em = emf.createEntityManager();
+            tx = em.getTransaction();
+            tx.begin();
+
+            em.persist(log);
+
+            tx.commit();
+
+        } catch (PersistenceException e) {
+
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+
+            throw new AccesoDenegadoException(
+                    "No se ha podido acceder a la base de datos", e);
+
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
     }
 
     @Override
-    public String consultaServicio(String codigo) throws ValidacionException, ServiceNotFoundException, IOException, AccesoDenegadoException {
-        Servicio servicio;
+    public String consultaServicio(String codigo) throws ValidacionException, ServiceNotFoundException, AccesoDenegadoException {
 
-        EntityManager em = emf.createEntityManager();
-        EntityTransaction tx = em.getTransaction();
-        tx.begin();
+        if (codigo == null || codigo.trim().isEmpty()) {
+            throw new ValidacionException("El código no puede ser nulo");
+        }
 
-        servicio = em.find(Servicio.class, codigo);
 
-        tx.commit();
-        em.close();
+        EntityManager em = null;
 
-        if (servicio == null) throw new ServiceNotFoundException("Servicio no encontrado");
+        try {
+            em = emf.createEntityManager();
 
-        return servicio.toString();
+            Servicio servicio = em.find(Servicio.class, codigo);
+
+            if (servicio == null) {
+                throw new ServiceNotFoundException("Servicio no encontrado");
+            }
+
+            return servicio.toString();
+
+        } catch (PersistenceException e) {
+            throw new AccesoDenegadoException("Error accediendo a la base de datos", e);
+        } finally {
+            if (em != null && em.isOpen()) {
+                em.close();
+            }
+        }
     }
 
     @Override
-    public List<Servicio> leerListaServicios() throws IOException, AccesoDenegadoException {
+    public List<Servicio> leerListaServicios() throws AccesoDenegadoException {
         List<Servicio> listaServicio;
 
-        EntityManager em = emf.createEntityManager();
-        EntityTransaction tx = em.getTransaction();
-        tx.begin();
+        try {
+            EntityManager em = emf.createEntityManager();
+            EntityTransaction tx = em.getTransaction();
+            tx.begin();
 
-        Query consulta = em.createQuery("SELECT s from Servicio s");
-        listaServicio = consulta.getResultList();
+            Query consulta = em.createQuery("SELECT s from Servicio s");
+            listaServicio = consulta.getResultList();
 
-        tx.commit();
-        em.close();
+            tx.commit();
+            em.close();
+        } catch (Exception e){
+            throw new AccesoDenegadoException("No se ha podido acceder a la base de datos", e);
+        }
 
         return listaServicio;
     }
 
     @Override
-    public String consultaCliente(String dni) throws ValidacionException, ClientNotFoundException, IOException, AccesoDenegadoException {
+    public String consultaCliente(String dni) throws ValidacionException, ClientNotFoundException, AccesoDenegadoException {
         Cliente cliente;
 
-        EntityManager em = emf.createEntityManager();
-        EntityTransaction tx = em.getTransaction();
-        tx.begin();
+        if (dni == null || dni.isBlank()){
+            throw new ValidacionException("El dni no puede ser nulo");
+        }
 
-        cliente = em.find(Cliente.class, dni);
+        try {
+            EntityManager em = emf.createEntityManager();
+            EntityTransaction tx = em.getTransaction();
+            tx.begin();
 
-        tx.commit();
-        em.close();
+            cliente = em.find(Cliente.class, dni);
 
-        if (cliente == null) throw new ClientNotFoundException("Cliente no encontrado");
+            tx.commit();
+            em.close();
+
+            if (cliente == null) throw new ClientNotFoundException("Cliente no encontrado");
+        } catch (Exception e){
+            throw new AccesoDenegadoException("No se ha podido acceder a la base de datos", e);
+        }
+
 
         return cliente.toString();
     }
 
     @Override
-    public List<Cliente> leerListaClientes() throws IOException, AccesoDenegadoException {
+    public List<Cliente> leerListaClientes() throws AccesoDenegadoException {
         List<Cliente> listaCliente;
+        try{
+            EntityManager em = emf.createEntityManager();
+            EntityTransaction tx = em.getTransaction();
+            tx.begin();
 
-        EntityManager em = emf.createEntityManager();
-        EntityTransaction tx = em.getTransaction();
-        tx.begin();
+            Query consulta = em.createQuery("SELECT c from Cliente c");
+            listaCliente = consulta.getResultList();
 
-        Query consulta = em.createQuery("SELECT c from Cliente c");
-        listaCliente = consulta.getResultList();
-
-        tx.commit();
-        em.close();
+            tx.commit();
+            em.close();
+        } catch (Exception e){
+            throw new AccesoDenegadoException("No se ha podido acceder a la base de datos", e);
+        }
 
         return listaCliente;
     }
 
     @Override
-    public List<Log> consultaLog(String codigoServicio, String dni, LocalDate fecha) throws ValidacionException, LogNotFoundException, IOException, AccesoDenegadoException, ClientNotFoundException, ServiceNotFoundException {
+    public List<Log> consultaLog(String codigoServicio, String dni, LocalDate fecha) throws ValidacionException, LogNotFoundException, AccesoDenegadoException, ClientNotFoundException, ServiceNotFoundException {
         List<Log> listaLog;
 
         EntityManager em = emf.createEntityManager();
@@ -176,7 +253,7 @@ public class CasinoManager implements CasinoDAO{
     }
 
     @Override
-    public boolean actualizarServicio(String codigo, Servicio servicioActualizado) throws ValidacionException, ServiceNotFoundException, IOException, AccesoDenegadoException {
+    public boolean actualizarServicio(String codigo, Servicio servicioActualizado) throws ValidacionException, ServiceNotFoundException, AccesoDenegadoException {
         Servicio servicio;
 
         EntityManager em = emf.createEntityManager();
@@ -199,7 +276,7 @@ public class CasinoManager implements CasinoDAO{
     }
 
     @Override
-    public boolean actualizarCliente(String dni, Cliente clienteActualizado) throws ValidacionException, ClientNotFoundException, IOException, AccesoDenegadoException {
+    public boolean actualizarCliente(String dni, Cliente clienteActualizado) throws ValidacionException, ClientNotFoundException, AccesoDenegadoException {
         Cliente cliente;
 
         EntityManager em = emf.createEntityManager();
@@ -221,7 +298,7 @@ public class CasinoManager implements CasinoDAO{
     }
 
     @Override
-    public boolean borrarServicio(Servicio servicio) throws ValidacionException, ServiceNotFoundException, IOException, AccesoDenegadoException {
+    public boolean borrarServicio(Servicio servicio) throws ValidacionException, ServiceNotFoundException, AccesoDenegadoException {
         Servicio servicioAux;
 
         EntityManager em = emf.createEntityManager();
@@ -242,7 +319,7 @@ public class CasinoManager implements CasinoDAO{
     }
 
     @Override
-    public boolean borrarCliente(Cliente cliente) throws ValidacionException, ClientNotFoundException, IOException, AccesoDenegadoException, ServiceNotFoundException {
+    public boolean borrarCliente(Cliente cliente) throws ValidacionException, ClientNotFoundException, AccesoDenegadoException, ServiceNotFoundException {
         Cliente clienteAux;
 
         EntityManager em = emf.createEntityManager();
@@ -251,7 +328,7 @@ public class CasinoManager implements CasinoDAO{
 
         clienteAux = em.find(Cliente.class, cliente.getDni());
 
-        if (clienteAux == null) throw new ServiceNotFoundException("Servicio not found");
+        if (clienteAux == null) throw new ClientNotFoundException("Cliente no encontrado");
 
         em.remove(clienteAux);
 
@@ -262,7 +339,7 @@ public class CasinoManager implements CasinoDAO{
     }
 
     @Override
-    public BigDecimal gananciasAlimentos(String dni) throws ValidacionException, IOException, AccesoDenegadoException, ClientNotFoundException {
+    public BigDecimal gananciasAlimentos(String dni) throws ValidacionException, AccesoDenegadoException, ClientNotFoundException {
 
         List<TipoConcepto> listaConcepto = List.of(TipoConcepto.COMPRABEBIDA, TipoConcepto.COMPRACOMIDA);
 
@@ -284,30 +361,34 @@ public class CasinoManager implements CasinoDAO{
     }
 
     @Override
-    public BigDecimal dineroInvertidoClienteEnDia(String dni, LocalDate fecha) throws ValidacionException, LogNotFoundException, IOException, AccesoDenegadoException, ClientNotFoundException {
+    public BigDecimal dineroInvertidoClienteEnDia(String dni, LocalDate fecha) throws ValidacionException, LogNotFoundException, AccesoDenegadoException, ClientNotFoundException {
 
-        EntityManager em = emf.createEntityManager();
+        try {
+            EntityManager em = emf.createEntityManager();
 
-        TypedQuery<BigDecimal> queryUsuarioGastado = em.createQuery("SELECT SUM(l.cantidadConcepto) FROM Log l WHERE l.cliente.dni = (:c1) AND l.fecha = (:c2) AND l.concepto IN (:lista)", BigDecimal.class);
+            TypedQuery<BigDecimal> queryUsuarioGastado = em.createQuery("SELECT SUM(l.cantidadConcepto) FROM Log l WHERE l.cliente.dni = (:c1) AND l.fecha = (:c2) AND l.concepto IN (:lista)", BigDecimal.class);
 
-        queryUsuarioGastado.setParameter("c1",dni);
-        queryUsuarioGastado.setParameter("c2",fecha);
-        queryUsuarioGastado.setParameter("lista",List.of(TipoConcepto.APOSTAR,TipoConcepto.COMPRABEBIDA,TipoConcepto.COMPRACOMIDA));
+            queryUsuarioGastado.setParameter("c1",dni);
+            queryUsuarioGastado.setParameter("c2",fecha);
+            queryUsuarioGastado.setParameter("lista",List.of(TipoConcepto.APOSTAR,TipoConcepto.COMPRABEBIDA,TipoConcepto.COMPRACOMIDA));
 
-        BigDecimal gastado = queryUsuarioGastado.getSingleResult();
+            BigDecimal gastado = queryUsuarioGastado.getSingleResult();
 
-        TypedQuery<BigDecimal> queryUsuarioGanado = em.createQuery("SELECT SUM(l.cantidadConcepto) FROM Log l WHERE l.cliente.dni = (:c1) AND l.fecha = (:c2) AND l.concepto = 'APUESTACLIENTEGANA'", BigDecimal.class);
-        queryUsuarioGanado.setParameter("c1",dni);
-        queryUsuarioGanado.setParameter("c2",fecha);
+            TypedQuery<BigDecimal> queryUsuarioGanado = em.createQuery("SELECT SUM(l.cantidadConcepto) FROM Log l WHERE l.cliente.dni = (:c1) AND l.fecha = (:c2) AND l.concepto = 'APUESTACLIENTEGANA'", BigDecimal.class);
+            queryUsuarioGanado.setParameter("c1",dni);
+            queryUsuarioGanado.setParameter("c2",fecha);
 
-        BigDecimal ganado = queryUsuarioGanado.getSingleResult();
+            BigDecimal ganado = queryUsuarioGanado.getSingleResult();
 
-        BigDecimal total = gastado.subtract(ganado);
-        return total;
+            BigDecimal total = gastado.subtract(ganado);
+            return total;
+        } catch (Exception e){
+            throw new LogNotFoundException("No se han encontrado logs");
+        }
     }
 
     @Override
-    public int vecesClienteJuegaMesa(String dni, String codigo) throws ValidacionException, IOException, AccesoDenegadoException, ClientNotFoundException, ServiceNotFoundException {
+    public int vecesClienteJuegaMesa(String dni, String codigo) throws ValidacionException, AccesoDenegadoException, ClientNotFoundException, ServiceNotFoundException {
         EntityManager em = emf.createEntityManager();
         TypedQuery<Log> query = em.createQuery("SELECT l from Log l WHERE l.cliente.dni = (:c1) AND l.servicio.codigo = (:c2)", Log.class);
 
@@ -319,39 +400,56 @@ public class CasinoManager implements CasinoDAO{
     }
 
     @Override
-    public BigDecimal ganadoMesas() throws IOException, AccesoDenegadoException {
-        EntityManager em = emf.createEntityManager();
+    public BigDecimal ganadoMesas() throws AccesoDenegadoException {
 
-        //Consulta para las ganancias en apuestas
-        TypedQuery<BigDecimal> queryApuestas = em.createQuery("SELECT SUM (l.cantidadConcepto) FROM Log l WHERE l.concepto in (:c1)",BigDecimal.class);
-        queryApuestas.setParameter("c1",TipoConcepto.APOSTAR);
-        BigDecimal ganancias = queryApuestas.getSingleResult();
+        try {
+            EntityManager em = emf.createEntityManager();
+
+            //Consulta para las ganancias en apuestas
+            TypedQuery<BigDecimal> queryApuestas = em.createQuery("SELECT SUM (l.cantidadConcepto) FROM Log l WHERE l.concepto in (:c1)",BigDecimal.class);
+            queryApuestas.setParameter("c1",TipoConcepto.APOSTAR);
+            BigDecimal ganancias = queryApuestas.getSingleResult();
 
 
-        //Consulta para las pérdidas en apuestas
-        TypedQuery<BigDecimal> queryPerdidas = em.createQuery("SELECT SUM (l.cantidadConcepto) FROM Log l WHERE l.concepto in (:c1)",BigDecimal.class);
-        queryPerdidas.setParameter("c1",TipoConcepto.APUESTACLIENTEGANA);
-        BigDecimal perdidas = queryPerdidas.getSingleResult();
+            //Consulta para las pérdidas en apuestas
+            TypedQuery<BigDecimal> queryPerdidas = em.createQuery("SELECT SUM (l.cantidadConcepto) FROM Log l WHERE l.concepto in (:c1)",BigDecimal.class);
+            queryPerdidas.setParameter("c1",TipoConcepto.APUESTACLIENTEGANA);
+            BigDecimal perdidas = queryPerdidas.getSingleResult();
 
-        BigDecimal total = ganancias.subtract(perdidas);
+            BigDecimal total = ganancias.subtract(perdidas);
 
-        return total;
+            return total;
+        } catch (PersistenceException e){
+            throw new AccesoDenegadoException("Error accediendo a la base de datos", e);
+        }
+
     }
 
     @Override
-    public BigDecimal ganadoEstablecimientos() throws IOException, AccesoDenegadoException {
-        EntityManager em = emf.createEntityManager();
-        TypedQuery<BigDecimal> query = em.createQuery("SELECT SUM (l.cantidadConcepto) FROM Log l WHERE l.concepto IN (:c1,:c2)", BigDecimal.class);
+    public BigDecimal ganadoEstablecimientos() throws AccesoDenegadoException {
+        try {
+            EntityManager em = emf.createEntityManager();
+            TypedQuery<BigDecimal> query = em.createQuery("SELECT SUM (l.cantidadConcepto) FROM Log l WHERE l.concepto IN (:c1,:c2)", BigDecimal.class);
 
-        query.setParameter("c1", TipoConcepto.COMPRABEBIDA);
-        query.setParameter("c2", TipoConcepto.COMPRACOMIDA);
+            query.setParameter("c1", TipoConcepto.COMPRABEBIDA);
+            query.setParameter("c2", TipoConcepto.COMPRACOMIDA);
 
-        BigDecimal total = query.getSingleResult();
-        return total;
+            BigDecimal total = query.getSingleResult();
+
+            return total != null ? total : BigDecimal.ZERO;
+
+        } catch (PersistenceException e){
+            throw new AccesoDenegadoException("Error accediendo a la base de datos", e);
+        }
     }
 
     @Override
-    public List<Servicio> devolverServiciosTipo(TipoServicio tipoServicio) throws ValidacionException, IOException, AccesoDenegadoException {
+    public List<Servicio> devolverServiciosTipo(TipoServicio tipoServicio) throws ValidacionException, AccesoDenegadoException {
+
+        if (tipoServicio == null){
+            throw new ValidacionException("EL tipo de servicio es invalido");
+        }
+
         EntityManager em = emf.createEntityManager();
         TypedQuery<Servicio> query = em.createQuery("SELECT s FROM Servicio s WHERE tipo = (:c1)",Servicio.class);
         query.setParameter("c1",tipoServicio);
@@ -366,10 +464,9 @@ public class CasinoManager implements CasinoDAO{
      * @param dni Dni del cliente
      * @param fecha fecha del dia a buscar
      * @return Lo ganado apostado menos lo perdido apostando
-     * @throws IOException
      * @throws ClientNotFoundException Lanza la excepción si no se encuentra el cliente
      */
-    public BigDecimal dineroGanadoClienteEnDia(String dni, LocalDate fecha) throws IOException, ClientNotFoundException {
+    public BigDecimal dineroGanadoClienteEnDia(String dni, LocalDate fecha) throws ClientNotFoundException {
         EntityManager em = emf.createEntityManager();
 
         CriteriaBuilder cb = em.getCriteriaBuilder();
@@ -377,6 +474,9 @@ public class CasinoManager implements CasinoDAO{
         Root<Log> log = cq.from(Log.class);
 
         Predicate cliente = cb.equal(log.get("cliente").get("dni"), dni);
+
+        if (cliente == null) throw new ClientNotFoundException("CLiente no encontrado.");
+
         Predicate pFecha = cb.equal(log.get("fecha"), fecha);
 
         cq.select(log).where(cb.and(cliente,pFecha));
